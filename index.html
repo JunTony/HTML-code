@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8" />
+    <title>人生風險實驗室</title>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            background-color: pink;
+        }
+
+        #sidebar {
+            width: 200px;
+            padding: 20px;
+            background-color: #fff0f5;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        #sidebar button {
+            padding: 10px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        #gameContainer {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #logo {
+            position: fixed;
+            bottom: 10px;
+            left: 20px;
+            width: 200px;  /* 可調整大小 */
+            height: auto;
+            z-index: 1000; /* 確保它蓋在畫面上層 */
+        }
+        canvas {   
+            display: block;
+            margin: 40px auto 0 auto;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.js"></script>
+    <script src="scene.js"></script>
+    <script src="shopscene.js"></script>
+    <script src="bootscene.js"></script>
+    <script src="roomscene.js"></script>
+    <script src="GameoverScene.js"></script>
+</head>
+<body>
+    <div id="sidebar">
+        <button id="startBtn">開始遊戲</button>
+        <button id="shopBtn">進入商店</button>
+        <button id="roomBtn">我的房間</button>
+        <button id="homeBtn" style="display:none;">回主頁</button>
+        <button id="screenshotBtn" style="display:none;">截圖</button>
+    </div>
+    <div id="gameContainer"></div>
+    <img id="logo" src="png/logo.jpg" alt="Logo">
+    <script> 
+            const saved = localStorage.getItem('purchasedItems');
+            window.purchasedItems = saved ? JSON.parse(saved) : {
+                item1: false,
+                item2: false,
+                item3: false,
+                item4: false,
+                item5: false,
+                item6: false,
+                item7: false,
+                item8: false
+            };
+            window.shopcoin = parseInt(localStorage.getItem('shopcoin')) || 100; 
+
+        // Phaser 遊戲配置
+        const config = {
+            type: Phaser.AUTO,
+            width: 1000,
+            height: 600,
+            parent: 'gameContainer',
+            scene: [BootScene, Scene, ShopScene, RoomScene, GameOverScene],
+            backgroundColor: 'black',
+        };
+
+        let game;
+        window.shopcoin = 100;
+        window.playerGold = 100;
+        window.connection = 50;
+        window.confidence = 50;
+        window.resilience = 50;
+        window.selectedChoices = [];
+        window.insurancePurchased = {
+            criticalIllness: false,       // 1. 重大疾病險
+            incomeProtection: false,      // 2. 收入保障險
+            propertyInsurance: false,     // 3. 房屋財產險
+            enhancedMedical: false,       // 4. 醫療險加強版
+            educationFund: false,         // 5. 教育基金險
+            longTermCare: false,          // 6. 長期照護險
+            enhancedMedical2: false,      // 7. 醫療險加強版（再次出現，需與第4項區分用途否？）
+            accidentSenior: false,        // 8. 意外險（熟年版）
+            cancerEarly: false,           // 9. 癌症險（早期理賠型）
+            longCare: false,              // 10. 長照險（與第6不同名稱但意思接近？）
+            accidentElderly: false,       // 11. 意外險（高齡延伸版）
+            lifeTrust: false              // 12. 壽險／遺產信託型保單
+        };
+        window.purchasedItems = {
+            item1: false,
+            item2: false,
+            item3: false,
+            item4: false,
+            item5: false,
+            item6: false,
+            item7: false,
+            item8: false
+        };
+        window.onload = () => {
+            game = new Phaser.Game(config);
+        };
+
+        // 按鈕控制
+        const startBtn = document.getElementById('startBtn');
+        const shopBtn = document.getElementById('shopBtn');
+        const homeBtn = document.getElementById('homeBtn');
+        const roomBtn = document.getElementById('roomBtn');
+        const screenshotBtn = document.getElementById('screenshotBtn');
+
+        startBtn.onclick = () => {
+            window.insurancePurchased = {
+                criticalIllness: false,
+                incomeProtection: false,
+                propertyInsurance: false,
+                enhancedMedical: false,
+                educationFund: false,
+                longTermCare: false,
+                enhancedMedical2: false,
+                accidentSenior: false,
+                cancerEarly: false,
+                longCare: false,
+                accidentElderly: false,
+                lifeTrust: false
+            };
+            window.playerGold = 100;
+            window.connection = 50;
+            window.confidence = 50;
+            window.resilience = 50;
+            hideMenu();
+            homeBtn.style.display = 'block';
+            game.scene.stop('BootScene');
+            game.scene.start('Scene');
+        };
+
+        shopBtn.onclick = () => {
+            hideMenu();
+            homeBtn.style.display = 'block';
+            game.scene.stop('BootScene');
+            game.scene.stop('RoomScene');
+            game.scene.stop('Scene');
+            game.scene.start('ShopScene');
+        };
+
+        homeBtn.onclick = () => {
+            showMenu();
+            homeBtn.style.display = 'none';
+            screenshotBtn.style.display = 'none';
+            game.scene.stop('ShopScene');
+            game.scene.stop('Scene');
+            game.scene.stop('RoomScene');
+            game.scene.stop('GameOverScene');
+            game.scene.start('BootScene');
+        };
+
+        roomBtn.onclick = () =>{
+            hideMenu();
+            homeBtn.style.display = 'block';
+            screenshotBtn.style.display = 'block';
+            game.scene.stop('ShopScene');
+            game.scene.stop('Scene');
+            game.scene.stop('BootScene');
+            game.scene.start('RoomScene');
+        }
+
+        function hideMenu() {
+            startBtn.style.display = 'none';
+            shopBtn.style.display = 'none';
+            roomBtn.style.display = 'none';
+        }
+
+        function showMenu() {
+            startBtn.style.display = 'block';
+            shopBtn.style.display = 'block';
+            roomBtn.style.display = 'block';
+        }
+
+        screenshotBtn.onclick = () => {
+            const scene = game.scene.getScene('RoomScene');  // 或你要截圖的場景名稱
+            if (scene && scene.takeScreenshot) {
+                scene.takeScreenshot();
+            } else {
+                console.warn('目前場景不支援截圖或尚未載入');
+            }
+        };
+    </script>
+</body>
+</html>
